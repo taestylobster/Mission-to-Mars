@@ -19,6 +19,7 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
+        "hemi_data":mars_hemis(browser),
         "last_modified": dt.datetime.now()
     }
 
@@ -96,6 +97,52 @@ def mars_facts():
 
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
+
+def mars_hemis(browser):
+    # 1. Use browser to visit the URL 
+    url = 'https://marshemispheres.com/'
+
+    browser.visit(url)
+
+    # Optional delay for loading the page
+    browser.is_element_present_by_css('div.item', wait_time=1)
+
+    # Parse the resulting html with soup
+    html = browser.html
+    img_soup = soup(html, 'html.parser')
+
+    # 2. Create a list to hold the images and titles.
+    count = 0
+    hemisphere_image_urls = []
+
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    hemi_box = img_soup.find('div', class_='collapsible results')
+    cerberus_title = hemi_box.find_all('h3')[0].get_text()
+    schiaparelli_title = hemi_box.find_all('h3')[1].get_text()
+    syrtis_title = hemi_box.find_all('h3')[2].get_text()
+    valles_title = hemi_box.find_all('h3')[3].get_text()
+    titles = [cerberus_title, schiaparelli_title, syrtis_title, valles_title]
+
+    for item in titles:
+        # Find and click the thumbnail
+        link1_found = browser.links.find_by_partial_text(titles[count])
+        link1_found.click()
+        #link2_found = browser.find_by_xpath('//*[@id="wide-image"]/div/ul/li[1]/a')
+        #link2_found.click()
+        # Parse the resulting html with soup
+        html = browser.html
+        img_soup = soup(html, 'html.parser')
+        # find the relative image url
+        hemi = img_soup.find('img', class_='wide-image').get('src')
+        hemisphere['img_url'].append(f'{url}/{hemi}')
+        hemisphere['title'].append(titles[count])
+        hemisphere_image_urls.append({'img_url':f'{url}/{hemi}','title':titles[count]})
+        browser.back()
+        count = count + 1
+    
+    # 4. Print the list that holds the dictionary of each image url and title.
+    return hemisphere_image_urls   
+
 
 if __name__ == "__main__":
 
